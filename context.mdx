@@ -1,0 +1,193 @@
+import myTheme from './theme'
+
+export const themes = [myTheme]
+
+# React Context
+
+---
+
+# Why review Context?
+
+# 🤷‍♂️
+
+---
+
+# `consumer-website`
+
+The Gatsby repo uses `Context` in several places:
+
+- `FeatureFlagsContext`
+- `LocaleContext`
+- `ThemeContext`
+- `ScrollContext`
+- `UtmParamContext`
+
+---
+
+Using these `Context` components incorrectly can lead to 🐛🐞.
+
+So, let's review how they work!
+
+--- 
+
+# What does Context look like?
+
+---
+
+# Context
+
+`Context` = `Provider(s)` + `Consumers`
+
+1. Create a new `Context`
+2. Create a value and the logic that updates it
+3. Pass the value to a `Provider`
+4. Consume the value with `Consumers`
+
+---
+
+# Why use Context?
+
+---
+
+# Global state
+
+Context let's you send values to components down the tree without passing them as props through every level.
+
+Whenever the `Provider` receives a new value, it transmits it to each `Consumer`, which re-renders. 📡
+
+This can be help synchronize values across the component tree, like theme styles, localization, etc.
+
+---
+
+# How to use Context?
+
+---
+
+# Create Context
+
+1. Create a new `Context` instance
+2. Optionally, give it a default value (only used if no `Provider`)
+
+```jsx
+import { createContext } from 'react'
+
+const NewContext = createContext(defaultValue);
+```
+
+---
+
+# Add a Provider
+
+1. Generally, add _one_ `Provider` component as high up the component tree as necessary to wrap all `Consumers`.
+2. Add nested `Provider` instances if you need to override the main instance in a specific part of the tree (rare).
+3. The `Provider` is always implemented as a `JSX` wrapper:
+
+```jsx
+import NewContext from './NewContext'
+
+<NewContext.Provider value={/* some value */}>
+  {/* children */}
+</NewContext.Provider>
+```
+
+---
+
+# Add Consumers
+
+1. Use _multiple_ `Consumers`
+2. Place each `Consumer` as close to the component that uses it as possible (ideally, _inside_ that component)
+3. A `Consumer` receives its value from the nearest `Provider`
+4. A `Consumer` can be implemented as a `JSX` wrapper (using the render prop pattern) or with a hook:
+
+---
+
+# Add Consumers
+
+```jsx
+import NewContext from './NewContext'
+
+<NewContext.Consumer>
+  {value => /* JSX using value */}
+</NewContext.Consumer>
+```
+
+```jsx
+import { useContext } from 'react'
+import NewContext from './NewContext'
+
+function MyComponent() {
+  const value = useContext(NewContext);
+
+  return /* JSX using value */
+}
+```
+
+---
+
+# What can go wrong?
+
+---
+
+## Unintentional Re-renders 🔁
+
+When a `Consumer` re-renders, it re-renders any extra components that are wrapped by `<Consumer />` or inside the component calling `useContext()` as well.
+
+These unintentional re-renders reset each component to its initial state, which can break the UI. 😱
+
+---
+
+# Scrolling bug 🐛
+
+The scrolling bug on the two live pages was happening because the entire page was unintentionally re-rendering every time the user scrolled.
+
+These unintentional re-renders reset all images to their blurred state, reset all accordions to showing their first pane, etc.
+
+TODO: link to old deploy with the issue?
+
+---
+
+`pages/en-ca/smart-thermostat-voice.js`
+
+```jsx
+// ...
+return (
+  <ScrollProvider>
+    <ScrollContext.Consumer>
+      {({ navClass }) => (
+        <NavComponent navClass={navClass} />
+        <ComponentThatShouldNotReRender1 />
+        <ComponentThatShouldNotReRender2 />
+        // ...
+        <ComponentThatShouldNotReRender10 />
+      )}
+    </ScrollContext.Consumer>
+  </ScrollProvider>
+)
+```
+
+---
+
+# Solution
+
+1. Move the `Provider` up the tree into `AppProvider`
+2. Move the `Consumer` down the tree into `NavComponent`
+
+[https://www.ecobee.com/en-ca/smart-thermostat-voice/](https://www.ecobee.com/en-ca/smart-thermostat-voice/)
+
+---
+
+# TL;DR
+
+1. Pair one `Provider` with multiple `Consumers`
+2. Add the `Provider` high enough to wrap all `Consumers`
+3. Isolate the `JSX` that should re-render and place each `Consumer` as close to it as possible
+
+---
+
+# Links
+
+`Context`: 
+[https://reactjs.org/docs/context.html](https://reactjs.org/docs/context.html)
+
+`useContext`:
+[https://reactjs.org/docs/hooks-reference.html#usecontext](https://reactjs.org/docs/hooks-reference.html#usecontext)
